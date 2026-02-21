@@ -1,0 +1,39 @@
+# Binaries
+htseq2matrix
+htseq2matrix.exe
+htseq2matrix-*
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test and output directories
+output/
+output_*/
+testdata/
+
+# Go build cache
+*.out
+go.work
+go.work.sum
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# R specific
+.Rhistory
+.RData
+.Rproj.user
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
