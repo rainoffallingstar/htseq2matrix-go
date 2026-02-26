@@ -63,6 +63,11 @@ func readHTSeqFile(filePath, postfix, htseqDir string) (HTSeqSample, error) {
 			continue
 		}
 
+		// Skip comment lines (e.g., enva banner starting with #)
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+
 		// Skip HTSeq summary lines
 		if strings.HasPrefix(line, "__") {
 			continue
