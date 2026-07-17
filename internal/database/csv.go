@@ -204,11 +204,16 @@ func splitLine(s string, sep rune) []string {
 	return parts
 }
 
-// DetectSpecies determines the species based on the postfix
-// Matches R logic: postfix == "_human.txt" means human, everything else is mouse
+// DetectSpecies determines the species based on the postfix.
+// Recognized values: "human" when postfix contains "human",
+// "mouse" when postfix contains "mouse", "unknown" otherwise.
 func DetectSpecies(postfix string) string {
-	if postfix == "_human.txt" {
+	lower := strings.ToLower(postfix)
+	if strings.Contains(lower, "human") {
 		return "human"
 	}
-	return "mouse"
+	if strings.Contains(lower, "mouse") {
+		return "mouse"
+	}
+	return "unknown"
 }

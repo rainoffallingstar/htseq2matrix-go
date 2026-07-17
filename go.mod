@@ -1,3 +1,3 @@
 module github.com/gerui/htseq2matrix-go
 
-go 1.25.0
+go 1.21
