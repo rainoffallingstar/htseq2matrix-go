@@ -20,10 +20,16 @@ func MergeSamples(samples []htseq.HTSeqSample) (*dataframe.DataFrame, error) {
 	sampleCountMaps := make([]htseq.GeneCountMap, len(samples))
 	sampleIDs := make([]string, len(samples))
 
-	for i, sample := range samples {
-		sampleIDs[i] = sample.SampleID
-		countMap := sample.ToCountMap()
-		sampleCountMaps[i] = countMap
+	for sampleIndex, sample := range samples {
+		sampleIDs[sampleIndex] = sample.SampleID
+		countMap := make(htseq.GeneCountMap, len(sample.Records))
+		for _, record := range sample.Records {
+			if _, exists := countMap[record.GeneID]; exists {
+				return nil, fmt.Errorf("sample %q contains duplicate gene ID %q", sample.SampleID, record.GeneID)
+			}
+			countMap[record.GeneID] = record.Count
+		}
+		sampleCountMaps[sampleIndex] = countMap
 
 		for geneID := range countMap {
 			allGeneIDs[geneID] = true
@@ -44,12 +50,11 @@ func MergeSamples(samples []htseq.HTSeqSample) (*dataframe.DataFrame, error) {
 	// Add rows for each gene ID
 	for _, geneID := range sortedGeneIDs {
 		values := make([]float64, len(samples))
-		for i, countMap := range sampleCountMaps {
+		for sampleIndex, countMap := range sampleCountMaps {
 			if count, ok := countMap[geneID]; ok {
-				values[i] = count
+				values[sampleIndex] = count
 			} else {
-				// Gene not present in this sample = NA (missing value)
-				values[i] = htseq.NA
+				values[sampleIndex] = 0
 			}
 		}
 		df.AddRow(geneID, values)

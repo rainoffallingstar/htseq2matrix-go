@@ -57,6 +57,8 @@ func readHTSeqFile(filePath, postfix, htseqDir string) (HTSeqSample, error) {
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
 
+	seenGeneIDs := make(map[string]struct{})
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -80,6 +82,13 @@ func readHTSeqFile(filePath, postfix, htseqDir string) (HTSeqSample, error) {
 
 		geneID := strings.TrimSpace(parts[0])
 		countStr := strings.TrimSpace(parts[1])
+		if geneID == "" {
+			return HTSeqSample{}, fmt.Errorf("empty gene ID in line: %s", line)
+		}
+		if _, exists := seenGeneIDs[geneID]; exists {
+			return HTSeqSample{}, fmt.Errorf("duplicate gene ID %q", geneID)
+		}
+		seenGeneIDs[geneID] = struct{}{}
 
 		count, err := strconv.ParseFloat(countStr, 64)
 		if err != nil {

@@ -1,6 +1,9 @@
 package htseq
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -50,6 +53,23 @@ func TestSampleIDExtraction(t *testing.T) {
 		if sampleID != "sample1" {
 			t.Errorf("expected sample1, got %s", sampleID)
 		}
+	}
+}
+
+func TestReadHTSeqFilesRejectsDuplicateGeneIDs(t *testing.T) {
+	inputDirectory := t.TempDir()
+	inputPath := filepath.Join(inputDirectory, "sample_human.txt")
+	inputContents := "ENSG000001\t10\nENSG000001\t11\n"
+	if err := os.WriteFile(inputPath, []byte(inputContents), 0644); err != nil {
+		t.Fatalf("write HTSeq test file: %v", err)
+	}
+
+	_, err := ReadHTSeqFiles(inputDirectory, "_human.txt")
+	if err == nil {
+		t.Fatal("ReadHTSeqFiles should reject duplicate gene IDs")
+	}
+	if !strings.Contains(err.Error(), `duplicate gene ID "ENSG000001"`) {
+		t.Fatalf("duplicate error = %q, want duplicate gene ID detail", err)
 	}
 }
 

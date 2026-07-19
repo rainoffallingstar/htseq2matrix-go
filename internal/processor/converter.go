@@ -7,30 +7,65 @@ import (
 	"github.com/gerui/htseq2matrix-go/pkg/dataframe"
 )
 
-// ConvertGeneIDs converts gene IDs to gene symbols using the database
-// Uses right-join semantics: keeps ALL database entries, HTSeq IDs not in DB are dropped
-func ConvertGeneIDs(df *dataframe.DataFrame, geneDB database.GeneDatabase, species string) (*dataframe.DataFrame, error) {
-	result := dataframe.NewDataFrame(df.Columns)
+const HighUnmappedRateThreshold = 0.20
 
-	conversionCount := 0
-	missingCount := 0
+// GeneIDConversionStats describes how many input IDs were converted or retained.
+type GeneIDConversionStats struct {
+	TotalCount       int
+	ConvertedCount   int
+	UnmappedCount    int
+	UnmappedRate     float64
+	HighUnmappedRate bool
+}
 
-	for i := 0; i < df.NumRows; i++ {
-		geneID := df.RowLabels[i]
-
-		if symbol, ok := geneDB.GetSymbolBySpecies(geneID, species); ok {
-			// Successfully converted
-			result.AddRow(symbol, df.Data[i])
-			conversionCount++
-		} else {
-			// Gene ID not found in database
-			// In R's right_join, these are dropped (not in output)
-			missingCount++
-		}
+// ConvertGeneIDs converts known gene IDs to symbols and preserves unknown IDs.
+func ConvertGeneIDs(
+	dataFrame *dataframe.DataFrame,
+	geneDatabase database.GeneDatabase,
+	species string,
+) (*dataframe.DataFrame, GeneIDConversionStats, error) {
+	if dataFrame == nil {
+		return nil, GeneIDConversionStats{}, fmt.Errorf("data frame is nil")
+	}
+	if geneDatabase == nil {
+		return nil, GeneIDConversionStats{}, fmt.Errorf("gene database is nil")
 	}
 
-	fmt.Printf("transforming Entrezeid to Symbol\n")
-	fmt.Printf("Converted %d gene IDs, %d not found in database\n", conversionCount, missingCount)
+	result := dataframe.NewDataFrame(dataFrame.Columns)
+	statistics := GeneIDConversionStats{TotalCount: dataFrame.NumRows}
 
-	return result, nil
+	for rowIndex := 0; rowIndex < dataFrame.NumRows; rowIndex++ {
+		geneID := dataFrame.RowLabels[rowIndex]
+		outputGeneID := geneID
+
+		if symbol, found := geneDatabase.GetSymbolBySpecies(geneID, species); found && symbol != "" {
+			outputGeneID = symbol
+			statistics.ConvertedCount++
+		} else {
+			statistics.UnmappedCount++
+		}
+
+		result.AddRow(outputGeneID, dataFrame.Data[rowIndex])
+	}
+
+	if statistics.TotalCount > 0 {
+		statistics.UnmappedRate = float64(statistics.UnmappedCount) / float64(statistics.TotalCount)
+	}
+	statistics.HighUnmappedRate = statistics.UnmappedRate > HighUnmappedRateThreshold
+
+	fmt.Printf("transforming Entrezeid to Symbol\n")
+	fmt.Printf(
+		"Converted %d gene IDs, %d not found in database (retained original IDs)\n",
+		statistics.ConvertedCount,
+		statistics.UnmappedCount,
+	)
+	if statistics.HighUnmappedRate {
+		fmt.Printf(
+			"WARNING: %.1f%% of gene IDs were not mapped; verify that the %s mapping database matches the HTSeq gene_id namespace\n",
+			statistics.UnmappedRate*100,
+			species,
+		)
+	}
+
+	return result, statistics, nil
 }

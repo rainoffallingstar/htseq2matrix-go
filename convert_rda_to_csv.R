@@ -45,7 +45,7 @@ cat(sprintf("  Converted %d human gene mappings\n", nrow(human_mapping)))
 cat("Converting mouse gene database to CSV...\n")
 load(rda_mouse)
 mouse_mapping <- data.frame(
-  gene_id = Entrez_Gene_Id_db_mmu$UNIPROT,
+  gene_id = Entrez_Gene_Id_db_mmu$ENSEMBL,
   symbol = Entrez_Gene_Id_db_mmu$SYMBOL,
   stringsAsFactors = FALSE
 )
