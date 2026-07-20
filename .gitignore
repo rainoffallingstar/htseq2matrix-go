@@ -1,6 +1,6 @@
 # Binaries
-htseq2matrix
-htseq2matrix.exe
+/htseq2matrix
+/htseq2matrix.exe
 htseq2matrix-*
 *.exe
 *.dll
