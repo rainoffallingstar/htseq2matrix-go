@@ -8,8 +8,8 @@ htseq2matrix-*
 *.dylib
 
 # Test and output directories
-output/
-output_*/
+/output/
+/output_*/
 testdata/
 
 # Go build cache
